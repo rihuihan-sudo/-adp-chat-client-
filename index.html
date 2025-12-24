@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>腾讯医疗智能体平台 - 专业版</title>
+    <!-- 引入 RemixIcon 图标库 -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        /* =================================================================
+           1. 核心基础样式 (源自您的原始设计)
+           ================================================================= */
+        :root {
+            --sidebar-bg: #f2f5f9;
+            --main-bg: #ffffff;
+            --primary-color: #6f5af7;
+            --primary-light: #ece9fe;
+            --text-main: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.05);
+            --shadow-float: 0 10px 40px rgba(0, 0, 0, 0.15);
+            --sidebar-width: 240px;
+            --sidebar-collapsed-width: 76px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        html, body { height: 100%; overflow: hidden; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--sidebar-bg);
+            color: var(--text-main);
+            display: flex;
+        }
+
+        /* 侧边栏样式 */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 16px;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(0,0,0,0.05);
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 100;
+        }
+
+        .sidebar.collapsed { width: var(--sidebar-collapsed-width); }
+        .sidebar.collapsed .logo-text,
+        .sidebar.collapsed .nav-text,
+        .sidebar.collapsed .arrow-icon,
+        .sidebar.collapsed .btn-login span,
+        .sidebar.collapsed .user-profile-info { display: none; }
+        .sidebar.collapsed .nav-item { justify-content: center; padding: 12px 0; }
+        .sidebar.collapsed .submenu { display: none !important; }
+        .sidebar.collapsed .logo { justify-content: center; padding-left: 0; }
+        .sidebar.collapsed .sidebar-footer { flex-direction: column; gap: 15px; }
+
+        .logo {
+            display: flex; align-items: center; gap: 10px;
+            font-weight: bold; font-size: 16px; margin-bottom: 30px;
+            padding-left: 10px; color: #333; height: 32px;
+        }
+        .logo i { font-size: 24px; color: var(--primary-color); flex-shrink: 0; }
+
+        .nav-menu { flex: 1; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; overflow-x: hidden; }
+
+        .nav-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 16px; border-radius: 10px;
+            color: var(--text-secondary); font-size: 14px;
+            transition: all 0.2s; cursor: pointer; position: relative;
+        }
+        .nav-item i { font-size: 18px; flex-shrink: 0; transition: color 0.2s; }
+        .nav-item:hover { background-color: rgba(0,0,0,0.03); color: var(--primary-color); }
+        .nav-item:hover i { color: var(--primary-color); }
+        .nav-item.active { background-color: var(--primary-light); color: var(--primary-color); font-weight: 500; }
+        .nav-item.active i { color: var(--primary-color); }
+        
+        .arrow-icon { margin-left: auto; font-size: 16px !important; transition: transform 0.3s; }
+        .nav-item.expanded .arrow-icon { transform: rotate(0deg); } 
+        .nav-item .arrow-icon { transform: rotate(-90deg); }
+
+        .submenu {
+            display: none; flex-direction: column; gap: 2px;
+            padding-left: 12px; margin-bottom: 8px;
+            animation: slideDown 0.2s ease-out;
+        }
+        .submenu.open { display: flex; }
+        .sub-item {
+            padding: 10px 16px 10px 42px; font-size: 13px; color: var(--text-secondary);
+            border-radius: 10px; cursor: pointer; position: relative;
+        }
+        .sub-item:hover { color: var(--primary-color); background: rgba(0,0,0,0.02); }
+        .sub-item::before {
+            content: ""; position: absolute; left: 24px; top: 50%; transform: translateY(-50%);
+            width: 4px; height: 4px; border-radius: 50%; background-color: #ccc;
+        }
+        .sub-item:hover::before { background-color: var(--primary-color); }
+
+        .sidebar-footer { 
+            margin-top: auto; padding-top: 20px; 
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .btn-login {
+            background-color: var(--primary-color); color: white; border: none; padding: 10px 0; 
+            flex: 1; border-radius: 20px; font-size: 14px; cursor: pointer; font-weight: 500;
+            white-space: nowrap; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-login:hover { opacity: 0.9; }
+
+        .toggle-btn {
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--text-secondary); border-radius: 8px;
+            margin-left: 10px; flex-shrink: 0; transition: background 0.2s;
+        }
+        .toggle-btn:hover { background: rgba(0,0,0,0.05); color: var(--text-main); }
+
+        /* 主内容区通用样式 */
+        .main-content {
+            flex: 1; min-width: 0;
+            background-color: var(--main-bg);
+            border-top-left-radius: 30px; border-bottom-left-radius: 30px;
+            margin: 10px 10px 10px 0; padding: 40px;
+            display: flex; flex-direction: column;
+            position: relative; box-shadow: -5px 0 20px rgba(0,0,0,0.02);
+            overflow-y: auto; transition: opacity 0.3s;
+        }
+        
+        .page-hidden { display: none !important; }
+
+        /* 首页特定样式 */
+        #home-page { align-items: center; justify-content: center; }
+        .welcome-section { text-align: center; margin-bottom: 40px; max-width: 800px; z-index: 10; }
+        .welcome-title { font-size: 32px; margin-bottom: 16px; font-weight: 700; }
+        .highlight-text {
+            background: linear-gradient(90deg, #5D5FEF 0%, #00C6FF 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .welcome-subtitle { color: var(--text-secondary); font-size: 14px; line-height: 1.6; }
+
+        .input-card {
+            width: 100%; max-width: 800px;
+            background: #fff; border: 1px solid #e0e0e0;
+            border-radius: 20px; padding: 20px;
+            box-shadow: var(--shadow-card); margin-bottom: 40px;
+            display: flex; flex-direction: column; min-height: 180px;
+            position: relative; z-index: 20; transition: all 0.3s;
+        }
+        .input-card:hover { box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08); border-color: var(--primary-light); }
+        .input-area { 
+            width: 100%; border: none; outline: none; resize: none; 
+            font-size: 16px; flex: 1; color: var(--text-main); font-family: inherit; margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        .input-area::placeholder { color: #ccc; }
+        
+        .input-toolbar {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: auto; border-top: 1px solid #f5f5f5; padding-top: 15px;
+        }
+
+        .tool-tags { display: flex; gap: 10px; position: relative; }
+        .dropdown-container { position: relative; }
+        
+        .tag-pill {
+            background: #f0f2f5; padding: 4px 12px; border-radius: 15px;
+            font-size: 12px; color: var(--text-secondary);
+            display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; white-space: nowrap;
+        }
+        .tag-pill:hover, .tag-pill.active { background: #e1e4e8; color: var(--primary-color); }
+        
+        /* 深度思考特殊样式 */
+        .tag-pill.deep-think {
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .tag-pill.deep-think.active {
+            background: linear-gradient(135deg, #f0f2f5 0%, #ece9fe 100%);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .dropdown-menu {
+            position: absolute; bottom: 100%; left: 0; margin-bottom: 10px;
+            width: 200px; background: white; border-radius: 12px;
+            box-shadow: var(--shadow-float); padding: 8px;
+            display: none; flex-direction: column; border: 1px solid #eee; z-index: 100;
+            animation: fadeIn 0.2s ease;
+        }
+        .dropdown-menu.show { display: flex; }
+        .dropdown-item {
+            padding: 10px 12px; font-size: 13px; color: var(--text-main);
+            border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px;
+        }
+        .dropdown-item:hover { background-color: #f5f7fa; color: var(--primary-color); }
+        .dropdown-item i { font-size: 16px; color: #94A3B8; }
+        .dropdown-item:hover i { color: var(--primary-color); }
+
+        .action-buttons { display: flex; align-items: center; gap: 15px; }
+        .icon-btn { color: var(--text-secondary); cursor: pointer; font-size: 20px; transition: color 0.2s; }
+        .icon-btn:hover { color: var(--primary-color); }
+        .send-btn { 
+            width: 32px; height: 32px; background: #bdbcfa; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; 
+            transition: all 0.2s;
+        }
+        .send-btn:hover { background: var(--primary-color); transform: scale(1.05); }
+
+        .quick-access { display: flex; gap: 30px; margin-bottom: 40px; }
+        .access-item { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: transform 0.2s; }
+        .access-item:hover { transform: translateY(-3px); }
+        .access-icon { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .access-label { font-size: 12px; color: var(--text-secondary); }
+
+        .recommendation-cards { display: flex; gap: 20px; width: 100%; max-width: 900px; }
+        .card {
+            flex: 1; background: #f9fafb; border-radius: 16px; padding: 15px;
+            display: flex; flex-direction: column; gap: 10px; cursor: pointer;
+            transition: all 0.2s; border: 1px solid transparent;
+        }
+        .card:hover { background: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-color: var(--primary-light); transform: translateY(-2px); }
+        .card-img {
+            width: 100%; height: 100px; background-color: #f0f0f0; 
+            border-radius: 12px; overflow: hidden; margin-bottom: 5px;
+        }
+        .card-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+        .card:hover .card-img img { transform: scale(1.05); }
+        .card-text { font-size: 13px; color: var(--text-main); font-weight: 500; display: flex; align-items: center; gap: 5px; }
+
+        /* =================================================================
+           2. 智能体对话界面 (通用版 - 用于首页提问)
+           ================================================================= */
+        .chat-interface {
+            flex: 1; min-width: 0;
+            background-color: var(--main-bg);
+            border-top-left-radius: 30px; border-bottom-left-radius: 30px;
+            margin: 10px 10px 10px 0; 
+            display: flex; flex-direction: column;
+            position: relative; box-shadow: -5px 0 20px rgba(0,0,0,0.02);
+            transition: opacity 0.3s;
+            height: calc(100% - 20px);
+        }
+
+        .chat-header {
+            padding: 15px 30px; border-bottom: 1px solid #f5f5f5;
+            display: flex; align-items: center; justify-content: space-between;
+            background: #fff; z-index: 10; flex-shrink: 0;
+            border-top-left-radius: 30px; 
+        }
+        .chat-title-wrap { display: flex; align-items: center; gap: 15px; }
+        .back-btn { 
+            width: 32px; height: 32px; border-radius: 8px; 
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            color: var(--text-secondary); transition: all 0.2s; border: 1px solid #eee;
+        }
+        .back-btn:hover { background: #f5f5f5; color: var(--primary-color); border-color: var(--primary-color); }
+        .chat-agent-info h2 { font-size: 16px; font-weight: 700; color: var(--text-main); }
+        .chat-agent-info p { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+        .chat-body {
+            flex: 1; padding: 30px; overflow-y: auto; background: #fff;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+        .message { max-width: 80%; line-height: 1.6; font-size: 14px; position: relative; word-wrap: break-word;}
+        .message.ai { align-self: flex-start; display: flex; gap: 12px; }
+        .message.user { align-self: flex-end; display: flex; gap: 12px; flex-direction: row-reverse;}
+        
+        .ai-avatar { 
+            width: 36px; height: 36px; background: var(--primary-color); color: white;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px;
+            flex-shrink: 0;
+        }
+        .user-avatar {
+            width: 36px; height: 36px; background: #333; color: white;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .msg-content { background: #f2f5f9; padding: 12px 16px; border-radius: 12px; border-top-left-radius: 2px; }
+        .message.user .msg-content { background: var(--primary-color); color: white; border-radius: 12px; border-top-right-radius: 2px; border-top-left-radius: 12px;}
+
+        /* Loading 动画 */
+        .typing-indicator { display: flex; gap: 4px; padding: 10px 0; }
+        .typing-dot { width: 6px; height: 6px; background: #ccc; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out; }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+        /* =================================================================
+           3. 智能问诊助手专属 PC 界面 (独立页面，无右侧栏，铺满全屏)
+           ================================================================= */
+        .consultation-layout { 
+            display: flex; height: 100%; width: 100%; 
+            overflow: hidden; background: #fff; 
+            border-radius: 0 0 30px 30px; 
+        }
+        
+        .consult-chat-area {
+            flex: 1; display: flex; flex-direction: column; background: #fff;
+            /* 关键：无右侧边栏，铺满 */
+        }
+
+        /* =================================================================
+           4. 其他通用样式 (智能体广场、KB、课程、弹窗)
+           ================================================================= */
+        .page-header {
+            padding-bottom: 20px; border-bottom: 1px solid #eee; margin-bottom: 20px; width: 100%;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .page-title { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .section-title { font-size: 16px; font-weight: 600; margin: 25px 0 15px; color: var(--text-main); display: flex; align-items: center; gap: 8px;}
+
+        /* 智能体广场 */
+        .square-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+        .square-filter-bar { display: flex; align-items: center; gap: 10px; padding-bottom: 5px; justify-content: space-between; }
+        .filter-scroll-area { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; align-items: center; flex: 1; }
+        .filter-chip { padding: 6px 16px; background: #fff; border: 1px solid #eee; border-radius: 20px; font-size: 13px; color: var(--text-secondary); cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+        .filter-chip.active, .filter-chip:hover { background: #ece9fe; color: var(--primary-color); border-color: var(--primary-color); font-weight: 500; }
+        .source-filter { flex-shrink: 0; position: relative; margin-left: 15px; }
+        .source-btn { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 12px; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 13px; color: #333; cursor: pointer; min-width: 110px; transition: all 0.2s; }
+        .upload-btn { background: var(--primary-color); color: white; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; text-decoration: none; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 10px rgba(111, 90, 247, 0.2); transition: all 0.2s; }
+        .agent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; width: 100%; margin-top:20px; }
+        .square-agent-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px; cursor: pointer; transition: all 0.2s; height: 100%; }
+        .square-agent-card:hover { box-shadow: 0 8px 25px rgba(0,0,0,0.06); transform: translateY(-2px); border-color: #ece9fe; }
+        .agent-header-row { display: flex; gap: 12px; align-items: flex-start; }
+        .agent-avatar { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; background: #f0f0f0; }
+        .agent-title-col h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; color: var(--text-main); }
+        .agent-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #e8f3ff; color: #2b7fff; display: inline-block; }
+        .source-tag-badge { margin-left: auto; font-size: 10px; padding: 2px 6px; background: #f2f5f9; color: #999; border-radius: 4px; }
+        .agent-desc { font-size: 12px; color: #666; line-height: 1.5; height: 36px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .agent-stats { display: flex; gap: 15px; font-size: 12px; color: #999; margin-top: auto; padding-top: 10px; border-top: 1px solid #f9f9f9; }
+        .stat-item { display: flex; align-items: center; gap: 4px; }
+
+        /* 个人中心 - 我的智能体 */
+        .agent-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 15px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 10px; }
+        .agent-card:hover { border-color: var(--primary-color); box-shadow: 0 5px 15px rgba(0,0,0,0.05); transform: translateY(-2px); }
+        .agent-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; }
+        .agent-info h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        .agent-info p { font-size: 12px; color: #999; }
+
+        /* 课程中心 */
+        .course-layout-top { display: flex; gap: 20px; margin-bottom: 30px; }
+        .hot-categories { width: 200px; background: #fff; border-radius: 12px; padding: 20px; flex-shrink: 0; border: 1px solid #eee; display: flex; flex-direction: column; gap: 15px; }
+        .cat-title { font-size: 14px; font-weight: 700; color: #333; display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+        .cat-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .cat-tag { font-size: 13px; color: #666; padding: 6px 10px; background: #f9fafb; border-radius: 6px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .cat-tag:hover { background: #e6f0ff; color: var(--primary-color); }
+        .course-hero-banner { flex: 1; background: linear-gradient(135deg, #102a83 0%, #264cc5 100%); border-radius: 12px; padding: 30px 40px; color: white; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; }
+        .hero-title { font-size: 28px; font-weight: 700; margin-bottom: 10px; z-index: 2; }
+        .hero-subtitle { font-size: 14px; opacity: 0.8; margin-bottom: 20px; z-index: 2; }
+        .hero-btn { padding: 8px 20px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; color: white; cursor: pointer; width: fit-content; backdrop-filter: blur(5px); z-index: 2; }
+        .training-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 40px; }
+        .training-card { background: #f0f7ff; border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; display: flex; flex-direction: column; gap: 10px; min-height: 140px; }
+        .training-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-color: #d6e4ff; }
+        .t-card-title { font-size: 15px; font-weight: 700; color: #1a202c; }
+        .t-card-desc { font-size: 12px; color: #64748b; line-height: 1.5; }
+        .t-card-icon { width: 40px; height: 40px; background: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--primary-color); font-size: 20px; margin-bottom: 5px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+        .course-tabs-bar { display: flex; gap: 20px; border-bottom: 1px solid #eee; margin-bottom: 20px; }
+        .c-tab { padding: 10px 0; color: #666; font-size: 14px; cursor: pointer; position: relative; }
+        .c-tab.active, .c-tab:hover { color: var(--primary-color); font-weight: 600; }
+        .c-tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background: var(--primary-color); }
+        .course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px; width: 100%; }
+        .course-card { background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #eee; transition: all 0.2s; cursor: pointer; }
+        .course-card:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
+        .course-thumb { height: 140px; background: #eee; position: relative; }
+        .course-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .course-info { padding: 15px; }
+        .course-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; line-height: 1.4; }
+        .course-meta { display: flex; justify-content: space-between; font-size: 12px; color: #999; }
+
+        /* 知识库 */
+        .kb-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .kb-search-box { display: flex; align-items: center; gap: 10px; }
+        .kb-search-input-wrap { position: relative; width: 240px; }
+        .kb-search-input-wrap input { width: 100%; padding: 8px 30px 8px 10px; border: 1px solid #ddd; border-radius: 4px; outline: none; font-size: 13px; }
+        .kb-search-input-wrap i { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #999; }
+        .kb-table-container { background: #fff; border-radius: 8px; border: 1px solid #eee; overflow: hidden; }
+        .kb-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+        .kb-table th { background: #f7f8fa; padding: 12px 20px; font-weight: 500; color: #666; border-bottom: 1px solid #eee; }
+        .kb-table td { padding: 16px 20px; border-bottom: 1px solid #f5f5f5; color: #333; }
+        .kb-table tr:hover { background: #f9faff; }
+        .kb-name-cell { font-weight: 600; color: var(--primary-color); cursor: pointer; }
+        .kb-ref-tag { display: inline-block; padding: 2px 8px; background: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; border-radius: 4px; font-size: 12px; margin-right: 5px; }
+        .kb-action-btn { color: var(--primary-color); cursor: pointer; margin-right: 15px; }
+        .kb-action-btn.delete { color: #ff4d4f; }
+
+        /* 弹窗样式 */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+        .login-modal-content { background: white; width: 400px; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.2); animation: slideUp 0.3s ease; }
+        .login-header { display: flex; border-bottom: 1px solid #eee; }
+        .login-tab { flex: 1; padding: 15px 0; text-align: center; font-size: 14px; color: #666; cursor: pointer; background: #f9f9f9; transition: all 0.2s; }
+        .login-tab.active { background: #fff; color: var(--primary-color); font-weight: 600; border-top: 3px solid var(--primary-color); }
+        .login-body { padding: 30px; min-height: 300px; display: flex; align-items: center; justify-content: center; }
+        .login-method { display: none; width: 100%; flex-direction: column; align-items: center; gap: 20px; }
+        .login-method.active { display: flex; }
+        .qrcode-box { width: 160px; height: 160px; border: 1px solid #eee; padding: 10px; border-radius: 8px; }
+        .qrcode-box img { width: 100%; height: 100%; }
+        .form-input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; outline: none; font-size: 14px; }
+        .form-btn { width: 100%; padding: 12px; background: var(--primary-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
+        
+        .simple-modal-content { background: white; width: 380px; padding: 24px; border-radius: 20px; text-align: center; animation: slideUp 0.3s ease; }
+        
+        /* 登录后样式 */
+        .user-profile {
+            display: none; align-items: center; gap: 10px; width: 100%;
+            padding: 8px; border-radius: 12px; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .user-profile:hover { background: rgba(0,0,0,0.05); }
+        .user-avatar-small {
+            width: 36px; height: 36px; border-radius: 50%; background: #ddd; 
+            overflow: hidden; flex-shrink: 0;
+        }
+        .user-avatar-small img { width: 100%; height: 100%; object-fit: cover; }
+        .user-profile-info { display: flex; flex-direction: column; overflow: hidden; }
+        .user-name { font-size: 14px; font-weight: 600; color: #333; }
+        .user-role { font-size: 11px; color: #999; }
+        .btn-logout { margin-left: auto; color: #999; cursor: pointer; padding: 5px; }
+        .btn-logout:hover { color: #ff4d4f; }
+
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px; font-size: 14px; z-index: 3000; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        .toast.show { opacity: 1; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* KB Modal */
+        .kb-modal-layout { display: flex; height: 450px; }
+        .kb-modal-sidebar { width: 120px; background: #f7f8fa; border-right: 1px solid #eee; padding: 20px 0; }
+        .kb-sidebar-item { padding: 12px 20px; cursor: pointer; font-size: 14px; color: #666; border-left: 3px solid transparent; }
+        .kb-sidebar-item.active { background: #fff; color: var(--primary-color); border-left-color: var(--primary-color); font-weight: 500; }
+        .kb-modal-main { flex: 1; padding: 30px; overflow-y: auto; text-align: left; }
+        .upload-area { border: 2px dashed #ddd; border-radius: 8px; padding: 40px; text-align: center; background: #fafafa; cursor: pointer; transition: all 0.2s; }
+        .upload-area:hover { border-color: var(--primary-color); background: #f0f7ff; }
+
+    </style>
+</head>
+<body>
+
+    <!-- 侧边栏 (结构保持最初一致) -->
+    <aside class="sidebar" id="sidebar">
+        <div class="logo">
+            <i class="ri-heart-pulse-fill"></i> <span class="logo-text">腾讯医疗平台</span>
+        </div>
+
+        <nav class="nav-menu">
+            <div class="nav-item active" onclick="showPage('home-page')">
+                <i class="ri-brain-line"></i> <span class="nav-text">医生的万能助手</span>
+            </div>
+            
+            <div class="nav-item" onclick="toggleSubmenu(this)">
+                <i class="ri-user-heart-line"></i> <span class="nav-text">个人空间</span>
+                <i class="ri-arrow-down-s-line arrow-icon"></i>
+            </div>
+            <div class="submenu">
+                <div class="sub-item" onclick="showPage('my-agents-page')"><span class="nav-text">我的智能体</span></div>
+                <div class="sub-item" onclick="showPage('learning-page')"><span class="nav-text">学习平台</span></div>
+                <div class="sub-item" onclick="showPage('history-page')"><span class="nav-text">使用记录</span></div>
+            </div>
+
+            <div style="height: 10px;"></div>
+            
+            <div class="nav-item" onclick="showPage('agent-square-page')"><i class="ri-apps-2-line"></i> <span class="nav-text">智能体广场</span></div>
+            <div class="nav-item" onclick="showPage('course-center-page')"><i class="ri-book-open-line"></i> <span class="nav-text">课程中心</span></div>
+            <div class="nav-item" onclick="showPage('knowledge-base-page')"><i class="ri-book-read-line"></i> <span class="nav-text">知识库</span></div>
+        </nav>
+
+        <div class="sidebar-footer" id="sidebar-footer">
+            <button class="btn-login" id="login-btn-sidebar" onclick="openLoginModal()">
+                <span>登录</span>
+            </button>
+            <div class="user-profile" id="user-profile-sidebar">
+                <div class="user-avatar-small"><img src="https://placehold.co/100x100/6f5af7/ffffff?text=DR" alt="User"></div>
+                <div class="user-profile-info">
+                    <div class="user-name">李医生</div>
+                    <div class="user-role">心内科主治医师</div>
+                </div>
+                <i class="ri-logout-box-r-line btn-logout" onclick="logout()" title="退出登录"></i>
+            </div>
+            <div class="toggle-btn" onclick="toggleSidebar()" title="折叠/展开">
+                <i class="ri-menu-fold-line" id="toggle-icon"></i>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 1. 主页 (Home Page) -->
+    <main class="main-content" id="home-page" onclick="closeAllDropdowns(event)">
+        <div class="welcome-section">
+            <h1 class="welcome-title">欢迎来到 <span class="highlight-text">腾讯医疗智能体平台</span></h1>
+            <p class="welcome-subtitle">腾讯健康十二时辰护航医患同行，请输入您的指令，如“我想查看糖尿病的专家指南”</p>
+        </div>
+
+        <div class="input-card" onclick="event.stopPropagation()">
+            <!-- 核心升级：onkeypress 监听回车，触发 startChatFromHome -->
+            <textarea id="main-input" class="input-area" placeholder="描述您的临床问题、查询药物相互作用..." onkeypress="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); startChatFromHome(); }"></textarea>
+            <div class="input-toolbar">
+                <div class="tool-tags">
+                    <!-- 核心升级：模型选择器 -->
+                    <div class="dropdown-container">
+                        <div class="tag-pill model-select" onclick="toggleDropdown('model-menu')">
+                            <span id="current-model-display">混元医疗大模型</span> <i class="ri-arrow-down-s-line"></i>
+                        </div>
+                        <div class="dropdown-menu" id="model-menu">
+                            <div class="dropdown-item" onclick="switchModel('hunyuan')"><i class="ri-openai-fill"></i> 混元医疗大模型</div>
+                            <div class="dropdown-item" onclick="switchModel('deepseek')"><i class="ri-code-box-line"></i> DeepSeek-V3</div>
+                        </div>
+                    </div>
+                    
+                    <div class="tag-pill deep-think" onclick="toggleDeepThink(this)">
+                        <i class="ri-brain-line"></i> 深度思考(R1)
+                    </div>
+
+                    <div class="dropdown-container">
+                        <div class="tag-pill" onclick="toggleDropdown('expert-menu')">@ 专家</div>
+                        <div class="dropdown-menu" id="expert-menu">
+                            <div class="dropdown-item" onclick="insertTag('@临床专家 ')"><i class="ri-nurse-line"></i> 临床专家</div>
+                            <div class="dropdown-item" onclick="insertTag('@药师专家 ')"><i class="ri-flask-line"></i> 药师专家</div>
+                            <div class="dropdown-item" onclick="insertTag('@护理专家 ')"><i class="ri-heart-add-line"></i> 护理专家</div>
+                            <div class="dropdown-item" onclick="insertTag('@管理专家 ')"><i class="ri-admin-line"></i> 管理专家</div>
+                            <div class="dropdown-item" onclick="insertTag('@随访专家 ')"><i class="ri-calendar-check-line"></i> 随访专家</div>
+                            <div class="dropdown-item" onclick="insertTag('@防疫专家 ')"><i class="ri-shield-cross-line"></i> 防疫专家</div>
+                            <div class="dropdown-item" onclick="insertTag('@学术专家 ')"><i class="ri-book-open-line"></i> 学术专家</div>
+                        </div>
+                    </div>
+                    <div class="dropdown-container">
+                        <div class="tag-pill" onclick="toggleDropdown('tool-menu')">/ 工具</div>
+                        <div class="dropdown-menu" id="tool-menu">
+                            <div class="dropdown-item" onclick="insertTag('/病历生成 ')"><i class="ri-file-text-line"></i> 病历生成</div>
+                            <div class="dropdown-item" onclick="insertTag('/3D建模 ')"><i class="ri-box-3-line"></i> 3D器官建模</div>
+                            <div class="dropdown-item" onclick="insertTag('/编程助手 ')"><i class="ri-code-s-slash-line"></i> 编程助手</div>
+                            <div class="dropdown-item" onclick="insertTag('/论文解读 ')"><i class="ri-article-line"></i> 论文解读</div>
+                            <div class="dropdown-item" onclick="insertTag('/临床助手 ')"><i class="ri-stethoscope-line"></i> 临床助手</div>
+                        </div>
+                    </div>
+                    <div class="dropdown-container">
+                        <div class="tag-pill" onclick="toggleDropdown('kb-menu')"># 知识库</div>
+                        <div class="dropdown-menu" id="kb-menu">
+                            <div class="dropdown-item" onclick="insertTag('#临床知识库 ')"><i class="ri-book-read-line"></i> 临床知识库</div>
+                            <div class="dropdown-item" onclick="insertTag('#药学知识库 ')"><i class="ri-medicine-bottle-line"></i> 药学知识库</div>
+                            <div class="dropdown-item" onclick="insertTag('#护理知识库 ')"><i class="ri-heart-pulse-line"></i> 护理知识库</div>
+                            <div class="dropdown-item" onclick="insertTag('#医院管理库 ')"><i class="ri-building-4-line"></i> 医院管理库</div>
+                            <div class="dropdown-item" onclick="insertTag('#防疫知识库 ')"><i class="ri-virus-line"></i> 防疫知识库</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <i class="ri-image-add-line icon-btn" onclick="openSimpleModal('upload-img-modal')"></i>
+                    <i class="ri-folder-add-line icon-btn" onclick="openSimpleModal('upload-file-modal')"></i>
+                    <!-- 核心升级：点击发送触发 startChatFromHome -->
+                    <div class="send-btn" onclick="startChatFromHome()"><i class="ri-send-plane-fill"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="quick-access">
+            <div class="access-item" onclick="enterAgent('病历生成助手')"><div class="access-icon" style="background:#e8f3ff; color:#2b7fff;"><i class="ri-file-text-line"></i></div><span class="access-label">病历生成</span></div>
+            <!-- 修改：智能问诊跳转到新界面 -->
+            <div class="access-item" onclick="enterConsultAgent()"><div class="access-icon" style="background:#e6fffa; color:#00b578;"><i class="ri-hospital-line"></i></div><span class="access-label">智能问诊</span></div>
+            <div class="access-item" onclick="enterAgent('编程辅助工具')"><div class="access-icon" style="background:#f0f5ff; color:#5d5fef;"><i class="ri-code-s-slash-line"></i></div><span class="access-label">编程助手</span></div>
+            <div class="access-item" onclick="enterAgent('医学文献解读')"><div class="access-icon" style="background:#fff0f6; color:#eb2f96;"><i class="ri-article-line"></i></div><span class="access-label">论文解读</span></div>
+            <div class="access-item" onclick="enterAgent('临床决策助手')"><div class="access-icon" style="background:#eef2ff; color:#597ef7;"><i class="ri-stethoscope-line"></i></div><span class="access-label">临床助手</span></div>
+        </div>
+
+        <div class="recommendation-cards">
+            <!-- 修改：点击卡片也进入新界面 -->
+            <div class="card" onclick="enterConsultAgent()">
+                <div class="card-img"><img src="https://placehold.co/600x300/e8f4ff/007bff?text=AI+Consultation" alt=""></div>
+                <div class="card-text"><i class="ri-hospital-line"></i> 智能问诊助手（PC专业版）</div>
+            </div>
+            <div class="card" onclick="enterAgent('用药安全助手')">
+                <div class="card-img"><img src="https://placehold.co/600x300/fff0f6/d63384?text=Medicine+Check" alt=""></div>
+                <div class="card-text"><i class="ri-error-warning-line"></i> 药物相互作用检查</div>
+            </div>
+            <div class="card" onclick="enterAgent('出院小结生成器')">
+                <div class="card-img"><img src="https://placehold.co/600x300/f0fdf4/16a34a?text=Medical+Report" alt=""></div>
+                <div class="card-text"><i class="ri-edit-circle-line"></i> 撰写出院小结</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 2. 我的智能体页面 -->
+    <div class="main-content page-hidden" id="my-agents-page" style="display:block; align-items: flex-start; justify-content: flex-start;">
+        <div class="page-header">
+            <div class="page-title"><i class="ri-robot-2-line" style="color:var(--primary-color)"></i> 我的智能体平台</div>
+            <div class="back-btn" onclick="showPage('home-page')"><i class="ri-home-4-line"></i> 返回</div>
+        </div>
+        
+        <div class="section-title"><i class="ri-time-line"></i> 最近使用</div>
+        <div class="agent-grid">
+            <div class="agent-card" onclick="enterAgent('病历生成助手')">
+                <div class="agent-icon" style="background:#e8f3ff; color:#2b7fff;"><i class="ri-file-text-line"></i></div>
+                <div class="agent-info"><h3>病历生成助手</h3><p>上次使用：10分钟前</p></div>
+            </div>
+            <div class="agent-card" onclick="enterAgent('辅助诊断专家')">
+                <div class="agent-icon" style="background:#e6fffa; color:#00b578;"><i class="ri-stethoscope-line"></i></div>
+                <div class="agent-info"><h3>辅助诊断专家</h3><p>上次使用：昨天 14:30</p></div>
+            </div>
+        </div>
+
+        <div class="section-title"><i class="ri-star-smile-line"></i> 常用智能体</div>
+        <div class="agent-grid">
+            <div class="agent-card" onclick="enterAgent('用药安全助手')">
+                <div class="agent-icon" style="background:#fff0f6; color:#eb2f96;"><i class="ri-capsule-line"></i></div>
+                <div class="agent-info"><h3>用药安全助手</h3><p>快速检查药物配伍禁忌</p></div>
+            </div>
+            <div class="agent-card" onclick="enterAgent('医学文献解读')">
+                <div class="agent-icon" style="background:#f0f5ff; color:#5d5fef;"><i class="ri-article-line"></i></div>
+                <div class="agent-info"><h3>医学文献解读</h3><p>快速提取论文核心观点</p></div>
+            </div>
+            <div class="agent-card" onclick="enterAgent('出院小结生成器')">
+                <div class="agent-icon" style="background:#eef2ff; color:#597ef7;"><i class="ri-file-list-3-line"></i></div>
+                <div class="agent-info"><h3>出院小结生成器</h3><p>标准化生成出院记录</p></div>
+            </div>
+            <div class="agent-card" style="border:1px dashed #ccc; justify-content:center; align-items:center;">
+                <i class="ri-add-line" style="font-size:32px; color:#ccc;"></i>
+                <span style="font-size:12px; color:#999;">创建新智能体</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 学习平台页面 -->
+    <div class="main-content page-hidden" id="learning-page" style="display:block; align-items: flex-start; justify-content: flex-start;">
+        <div class="page-header">
+            <div class="page-title"><i class="ri-graduation-cap-line" style="color:var(--primary-color)"></i> 学习平台</div>
+            <div class="back-btn" onclick="showPage('home-page')"><i class="ri-home-4-line"></i> 返回</div>
+        </div>
+
+        <div class="course-banner">
+            <div class="banner-content">
+                <h2>腾讯医疗大模型应用实战营</h2>
+                <p>掌握AI辅助诊疗核心技能，提升临床科研效率</p>
+                <button style="margin-top:15px; padding:8px 20px; border:none; border-radius:20px; background:white; color:#6f5af7; cursor:pointer; font-weight:bold;">立即学习</button>
+            </div>
+            <i class="ri-robot-line banner-decoration"></i>
+        </div>
+
+        <div style="display:flex; gap:20px; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <span style="font-weight:bold; color:var(--primary-color); border-bottom:2px solid var(--primary-color); padding-bottom:10px;">推荐课程</span>
+            <span style="color:#666; cursor:pointer;">最新上线</span>
+            <span style="color:#666; cursor:pointer;">我的课程</span>
+        </div>
+
+        <div class="course-grid">
+            <div class="course-card">
+                <div class="course-thumb">
+                    <img src="https://placehold.co/400x250/e0e0e0/999?text=AI+Basic" alt="Course">
+                    <span class="course-tag">必修</span>
+                </div>
+                <div class="course-info">
+                    <div class="course-title">医疗AI基础与临床应用场景概览</div>
+                    <div class="course-meta"><span>腾讯健康</span> <span>1200人已学</span></div>
+                </div>
+            </div>
+            <div class="course-card">
+                <div class="course-thumb">
+                    <img src="https://placehold.co/400x250/e0e0e0/999?text=Deep+Learning" alt="Course">
+                </div>
+                <div class="course-info">
+                    <div class="course-title">深度学习在医学影像分析中的应用</div>
+                    <div class="course-meta"><span>影像专家组</span> <span>850人已学</span></div>
+                </div>
+            </div>
+            <div class="course-card">
+                <div class="course-thumb">
+                    <img src="https://placehold.co/400x250/e0e0e0/999?text=Research" alt="Course">
+                    <span class="course-tag">进阶</span>
+                </div>
+                <div class="course-info">
+                    <div class="course-title">如何利用智能体辅助撰写高质量SCI论文</div>
+                    <div class="course-meta"><span>科研中心</span> <span>2300人已学</span></div>
+                </div>
+            </div>
+            <div class="course-card">
+                <div class="course-thumb">
+                    <img src="https://placehold.co/400x250/e0e0e0/999?text=Prompt" alt="Course">
+                </div>
+                <div class="course-info">
+                    <div class="course-title">医疗提示词工程(Prompt Engineering)指南</div>
+                    <div class="course-meta"><span>AI实验室</span> <span>560人已学</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. 使用记录页面 -->
+    <div class="main-content page-hidden" id="history-page" style="display:block; align-items: flex-start; justify-content: flex-start;">
+        <div class="page-header">
+            <div class="page-title"><i class="ri-history-line" style="color:var(--primary-color)"></i> 历史使用记录</div>
+            <div class="back-btn" onclick="showPage('home-page')"><i class="ri-home-4-line"></i> 返回</div>
+        </div>
+
+        <div class="section-title">今天</div>
+        <div class="history-list">
+            <div class="history-item">
+                <div class="history-left">
+                    <div class="history-icon"><i class="ri-file-text-line"></i></div>
+                    <div>
+                        <div style="font-weight:600; font-size:14px;">病历生成助手</div>
+                        <div style="font-size:12px; color:#666; margin-top:4px;">生成了“张三-高血压随访”病历</div>
+                    </div>
+                </div>
+                <div class="history-time">10:23</div>
+            </div>
+            <!-- 其他记录 -->
+        </div>
+    </div>
+
+    <!-- 5. 智能体广场页面 -->
+    <div class="main-content page-hidden" id="agent-square-page" style="display:block; align-items: flex-start; justify-content: flex-start; padding: 20px 40px;">
+        <div class="square-header">
+            <div class="page-title"><i class="ri-apps-2-line" style="color:var(--primary-color)"></i> 智能体广场</div>
+            <a href="https://adp.cloud.tencent.com/adp#/app/home?spaceId=default_space" target="_blank" class="upload-btn">
+                <i class="ri-add-circle-line"></i> 上架智能体
+            </a>
+        </div>
+
+        <div class="square-filter-bar">
+            <!-- 左侧滚动分类标签 -->
+            <div class="filter-scroll-area">
+                <div class="filter-chip active" onclick="filterAgents('all', this)">全部分类</div>
+                <div class="filter-chip" onclick="filterAgents('clinical', this)">临床智能体</div>
+                <div class="filter-chip" onclick="filterAgents('nursing', this)">护理智能体</div>
+                <div class="filter-chip" onclick="filterAgents('pharmacy', this)">药师智能体</div>
+                <div class="filter-chip" onclick="filterAgents('research', this)">科研智能体</div>
+                <div class="filter-chip" onclick="filterAgents('expert', this)">专家智能体</div>
+                <div class="filter-chip" onclick="filterAgents('management', this)">管理智能体</div>
+                <div class="filter-chip" onclick="filterAgents('plugin', this)">实用插件</div>
+            </div>
+            
+            <!-- 右侧来源筛选器 -->
+            <div class="source-filter dropdown-container">
+                <div class="source-btn" onclick="toggleDropdown('source-menu')">
+                    <span style="display:flex; align-items:center; gap:6px;">
+                        <i class="ri-layout-grid-fill"></i> <span id="current-source">全部来源</span>
+                    </span>
+                    <i class="ri-arrow-down-s-line"></i>
+                </div>
+                <div class="dropdown-menu" id="source-menu" style="width: 100%; top: 105%; right: 0; left: auto;">
+                    <div class="dropdown-item" onclick="filterSource('all')" style="color:var(--primary-color); font-weight:500;">全部来源</div>
+                    <div class="dropdown-item" onclick="filterSource('official')">官方</div>
+                    <div class="dropdown-item" onclick="filterSource('partner')">生态伙伴</div>
+                    <div class="dropdown-item" onclick="filterSource('third')">第三方</div>
+                    <div class="dropdown-item" onclick="filterSource('self')">自建</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="agent-grid" id="square-agent-grid" style="margin-top:20px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+            <!-- 动态生成的智能体卡片将放在这里 -->
+        </div>
+    </div>
+
+    <!-- 6. 插件广场页面已移除 -->
+
+    <!-- 7. 课程中心页面 (新增功能页面) -->
+    <div class="main-content page-hidden" id="course-center-page" style="display:block; align-items: flex-start; justify-content: flex-start; padding: 20px 40px;">
+        <!-- 顶部布局：分类 + Banner -->
+        <div class="course-layout-top">
+            <div class="hot-categories">
+                <div class="cat-title"><i class="ri-fire-fill" style="color: #ff4d4f;"></i> 热门分类</div>
+                <div class="cat-list">
+                    <div class="cat-tag">AI通识</div>
+                    <div class="cat-tag">AI助手</div>
+                    <div class="cat-tag">AI知识库</div>
+                    <div class="cat-tag">AI Agents</div>
+                    <div class="cat-tag">AIGC</div>
+                    <div class="cat-tag">AI编程</div>
+                </div>
+            </div>
+            <div class="course-hero-banner">
+                <div class="hero-title">腾讯混元大模型全景介绍</div>
+                <div class="hero-subtitle">Tencent Hunyuan Large Model Comprehensive Introduction</div>
+                <div class="hero-btn"><i class="ri-play-circle-line"></i> 腾讯混元</div>
+                <!-- 装饰背景图 -->
+                <i class="ri-robot-2-line" style="position: absolute; right: 20px; bottom: -20px; font-size: 150px; opacity: 0.1;"></i>
+            </div>
+        </div>
+
+        <!-- 实训平台 -->
+        <div class="section-title" style="margin-top:0;">实训平台 <span style="font-size:12px; color:#999; margin-left:auto; font-weight:400; cursor:pointer;">展开更多 <i class="ri-arrow-right-s-line"></i></span></div>
+        <div class="training-grid">
+            <div class="training-card" onclick="window.open('https://cloud.tencent.com/product/tione', '_blank')">
+                <div class="t-card-icon"><i class="ri-cpu-line"></i></div>
+                <div class="t-card-title">TI-ONE 机器学习训练平台</div>
+                <div class="t-card-desc">一站式机器学习平台，提供从数据预处理、模型构建、训练、评估到服务的全流程开发环境支持。</div>
+            </div>
+            <div class="training-card" onclick="window.open('https://cloud.tencent.com/product/hai', '_blank')">
+                <div class="t-card-icon"><i class="ri-speed-line"></i></div>
+                <div class="t-card-title">HAI 高性能应用服务</div>
+                <div class="t-card-desc">基于腾讯云海量、弹性的GPU算力，面向AI、科学计算，提供开箱即用的GPU云计算服务。</div>
+            </div>
+            <div class="training-card" onclick="window.open('https://adp.cloud.tencent.com', '_blank')">
+                <div class="t-card-icon" style="color:#722ed1;"><i class="ri-apps-line"></i></div>
+                <div class="t-card-title">ADP 统一智能体开发平台</div>
+                <div class="t-card-desc">企业级智能体开发平台，支持低代码编排、插件集成与多模型接入，快速构建行业专属AI应用。</div>
+            </div>
+            <div class="training-card" onclick="window.open('https://lexiang.tencent.com', '_blank')">
+                <div class="t-card-icon" style="color:#fa8c16;"><i class="ri-lightbulb-flash-line"></i></div>
+                <div class="t-card-title">腾讯乐享</div>
+                <div class="t-card-desc">一站式企业社区，凝聚企业文化，促进知识管理与培训学习，打造数智化学习型组织。</div>
+            </div>
+        </div>
+
+        <!-- 全部课程 -->
+        <div class="section-title">全部课程</div>
+        <!-- 选项卡更新：添加了点击事件以支持筛选 -->
+        <div class="course-tabs-bar">
+            <div class="c-tab active" onclick="filterCourses('all', this)">全部</div>
+            <div class="c-tab" onclick="filterCourses('general', this)">AI通识</div>
+            <div class="c-tab" onclick="filterCourses('imaging', this)">医学影像</div>
+            <div class="c-tab" onclick="filterCourses('clinical', this)">临床辅助</div>
+            <div class="c-tab" onclick="filterCourses('research', this)">科研加速</div>
+            <div class="c-tab" onclick="filterCourses('aigc', this)">医疗AIGC</div>
+            <div style="margin-left:auto;"><i class="ri-search-line icon-btn"></i></div>
+        </div>
+
+        <!-- 课程网格：内容将通过JS动态生成以支持筛选 -->
+        <div class="course-grid" id="course-grid">
+            <!-- JS渲染区域 -->
+        </div>
+    </div>
+
+    <!-- 8. 知识库页面 (新增功能页面) -->
+    <div class="main-content page-hidden" id="knowledge-base-page" style="display:block; align-items: flex-start; justify-content: flex-start; padding: 20px 40px;">
+        <div class="page-header">
+            <div class="page-title"><i class="ri-book-read-line" style="color:var(--primary-color)"></i> 知识库管理 <i class="ri-information-line" style="font-size:16px; color:#999; margin-left:5px; font-weight:400;"></i></div>
+        </div>
+
+        <div class="kb-header-bar">
+            <button class="upload-btn" onclick="openKBModal()" style="cursor: pointer;">
+                <i class="ri-add-line"></i> 新建知识库
+            </button>
+            <div class="kb-search-box">
+                <div class="kb-search-input-wrap">
+                    <input type="text" placeholder="知识库名称/修改人">
+                    <i class="ri-search-line"></i>
+                </div>
+                <button style="padding: 8px; background: white; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; color: #666;">
+                    <i class="ri-refresh-line"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="kb-table-container">
+            <table class="kb-table" id="kb-table">
+                <thead>
+                    <tr>
+                        <th style="width: 20%;">知识库名称</th>
+                        <th style="width: 25%;">知识库描述</th>
+                        <th style="width: 20%;">被以下应用引用</th>
+                        <th style="width: 15%;">修改时间</th>
+                        <th style="width: 10%;">创建人</th>
+                        <th style="width: 10%;">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="kb-table-body">
+                    <!-- JS 渲染 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- NEW: 智能问诊助手专属 PC 界面 (独立页面，全屏，无右侧信息) -->
+    <!-- ============================================== -->
+    <div class="chat-interface page-hidden" id="consultation-page">
+        <div class="chat-header" style="background: #fdfdfd;">
+            <div class="chat-title-wrap">
+                <div class="back-btn" onclick="showPage('home-page')" title="返回首页"><i class="ri-arrow-left-line"></i></div>
+                <div class="chat-agent-info">
+                    <h2 style="display:flex; align-items:center; gap:8px;"><i class="ri-hospital-line" style="color:var(--primary-color)"></i> 智能问诊助手 <span style="font-size:10px; background:#e6f7ff; color:#1890ff; padding:2px 6px; border-radius:4px; font-weight:normal;">官方专业版</span></h2>
+                    <p>DeepSeek-V3 医疗模型实时驱动</p>
+                </div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button style="padding:6px 12px; font-size:12px; border:1px solid #ddd; background:white; border-radius:6px; cursor:pointer;" onclick="alert('已清空当前会话')"><i class="ri-delete-bin-line"></i> 清空会话</button>
+                <button style="padding:6px 12px; font-size:12px; background:var(--primary-color); color:white; border:none; border-radius:6px; cursor:pointer;" onclick="alert('报告已生成')"><i class="ri-file-list-line"></i> 生成报告</button>
+            </div>
+        </div>
+        
+        <!-- 全屏分栏布局 (无右侧边栏) -->
+        <div class="consultation-layout">
+            <div class="consult-chat-area">
+                <div class="chat-body" id="consult-history" style="background: #fff;">
+                    <div class="message ai">
+                        <div class="ai-avatar"><i class="ri-hospital-line"></i></div>
+                        <div class="msg-content">您好，我是智能问诊助手。请描述患者的主诉、现病史或上传检查报告，我将协助您进行初步诊断分析。</div>
+                    </div>
+                </div>
+                <div style="padding: 20px; border-top: 1px solid #f0f0f0;">
+                    <div style="background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 12px; padding: 10px; display: flex; align-items: center;">
+                        <i class="ri-attachment-2" style="color:#999; margin-right:10px; cursor:pointer;" title="上传报告"></i>
+                        <input type="text" id="consult-input" placeholder="请输入患者主诉，例如：男性，45岁，反复胸痛一周..." style="flex: 1; border: none; background: transparent; outline: none; padding: 0 5px; font-size: 14px;" onkeypress="if(event.key==='Enter') sendConsultMessage()">
+                        <i class="ri-send-plane-fill" onclick="sendConsultMessage()" style="color: var(--primary-color); font-size: 20px; cursor: pointer;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 通用聊天界面 (用于首页提问和其他智能体) -->
+    <!-- ============================================== -->
+    <div class="chat-interface page-hidden" id="chat-page">
+        <div class="chat-header">
+            <div class="chat-title-wrap">
+                <div class="back-btn" onclick="showPage('home-page')" title="返回首页"><i class="ri-arrow-left-line"></i></div>
+                <div class="chat-agent-info"><h2 id="agent-name">智能体名称</h2><p id="agent-tech-support">DeepSeek医疗大模型提供技术支持</p></div>
+            </div>
+            <div style="color: #999; cursor: pointer;"><i class="ri-more-fill"></i></div>
+        </div>
+        
+        <!-- 消息列表容器 -->
+        <div class="chat-body" id="chat-history">
+            <div class="message ai">
+                <div class="ai-avatar"><i class="ri-robot-2-line"></i></div>
+                <div class="msg-content">您好，我是<span id="agent-name-msg">医疗智能助手</span>。请告诉我您的需求，我将为您提供辅助。</div>
+            </div>
+        </div>
+
+        <!-- 输入框区域 -->
+        <div style="padding: 20px; background: #fff; border-top: 1px solid #f0f0f0;">
+            <div style="background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 12px; padding: 10px; display: flex; align-items: center;">
+                <input type="text" id="chat-input" placeholder="请输入指令..." style="flex: 1; border: none; background: transparent; outline: none; padding: 0 10px; font-size: 14px;" onkeypress="handleKeyPress(event)">
+                <i class="ri-send-plane-fill" onclick="sendMessage()" style="color: var(--primary-color); font-size: 20px; cursor: pointer;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- 登录弹窗 (新增ID用于获取输入) -->
+    <div id="login-modal" class="modal-overlay">
+        <div class="login-modal-content">
+            <div class="login-header">
+                <div class="login-tab active" onclick="switchLoginTab(0)">微信登录</div>
+                <div class="login-tab" onclick="switchLoginTab(1)">企业微信</div>
+                <div class="login-tab" onclick="switchLoginTab(2)">账号密码</div>
+                <div class="login-tab" onclick="switchLoginTab(3)">手机验证码</div>
+            </div>
+            <div class="login-body">
+                <!-- 微信登录 -->
+                <div class="login-method active" id="login-wechat">
+                    <div class="qrcode-box"><img src="https://placehold.co/150x150?text=WeChat+QR" alt="QR"></div>
+                    <p style="font-size:14px; color:#666;">请使用微信扫一扫登录</p>
+                    <p style="font-size:12px; color:#999; margin-top:5px;">(演示版请使用账号密码登录)</p>
+                </div>
+                <!-- 企业微信 -->
+                <div class="login-method" id="login-wecom">
+                    <div class="qrcode-box"><img src="https://placehold.co/150x150?text=WeCom+QR" alt="QR"></div>
+                    <p style="font-size:14px; color:#666;">请使用企业微信扫一扫登录</p>
+                </div>
+                <!-- 账号密码 -->
+                <div class="login-method" id="login-pwd">
+                    <input type="text" id="username-input" class="form-input" placeholder="请输入账号 (默认: doctor)">
+                    <input type="password" id="password-input" class="form-input" placeholder="请输入密码 (默认: 123456)">
+                    <button class="form-btn" onclick="handleLogin()">登录</button>
+                </div>
+                <!-- 手机号 -->
+                <div class="login-method" id="login-phone">
+                    <input type="text" class="form-input" placeholder="请输入手机号">
+                    <div style="display:flex; gap:10px; width:100%;">
+                        <input type="text" class="form-input" placeholder="验证码">
+                        <button style="width:100px; background:#f0f2f5; border:1px solid #ddd; border-radius:6px; color:#666; cursor:pointer;">获取验证码</button>
+                    </div>
+                    <button class="form-btn" onclick="closeSimpleModal('login-modal')">登录</button>
+                </div>
+            </div>
+            <div style="text-align:center; padding:10px; border-top:1px solid #eee;">
+                <button style="border:none; background:none; color:#999; cursor:pointer;" onclick="closeSimpleModal('login-modal')">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 提示框 -->
+    <div id="toast" class="toast">登录成功！</div>
+
+    <!-- 通用简易弹窗 -->
+    <div id="upload-img-modal" class="modal-overlay">
+        <div class="simple-modal-content">
+            <i class="ri-image-add-line" style="font-size: 32px; color: var(--primary-color); margin-bottom: 10px;"></i>
+            <p style="margin-bottom:20px;">点击或拖拽 CT/MRI 影像至此处</p>
+            <button style="padding:8px 20px; background:var(--primary-color); color:white; border:none; border-radius:20px; cursor:pointer;" onclick="closeSimpleModal('upload-img-modal')">关闭</button>
+        </div>
+    </div>
+    <div id="upload-file-modal" class="modal-overlay">
+        <div class="simple-modal-content">
+            <i class="ri-file-excel-2-line" style="font-size: 32px; color: #00b578; margin-bottom: 10px;"></i>
+            <p style="margin-bottom:20px;">上传病历文件 (PDF/Word)</p>
+            <button style="padding:8px 20px; background:var(--primary-color); color:white; border:none; border-radius:20px; cursor:pointer;" onclick="closeSimpleModal('upload-file-modal')">关闭</button>
+        </div>
+    </div>
+    
+    <!-- 新建知识库弹窗 -->
+    <div id="create-kb-modal" class="modal-overlay">
+        <div class="login-modal-content" style="width: 700px; height: auto; max-height: 90vh; display: flex; flex-direction: column;">
+            <div style="padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: 700; font-size: 16px; display: flex; justify-content: space-between;">
+                <span>新建知识库</span>
+                <i class="ri-close-line" style="cursor: pointer;" onclick="closeKBModal()"></i>
+            </div>
+            
+            <div class="kb-modal-layout">
+                <div class="kb-modal-sidebar">
+                    <div class="kb-sidebar-item active" id="kb-tab-base" onclick="switchKBTab('base')">基础信息</div>
+                    <div class="kb-sidebar-item" id="kb-tab-upload" onclick="switchKBTab('upload')">上传文件</div>
+                </div>
+                
+                <div class="kb-modal-main">
+                    <div id="kb-view-base">
+                        <div class="form-group">
+                            <label class="form-label">知识库名称<span class="required">*</span></label>
+                            <input type="text" class="kb-input" placeholder="请输入名称">
+                            <div class="char-count">0/30</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">知识库描述</label>
+                            <textarea class="kb-textarea" placeholder="说明知识库的内容和用途"></textarea>
+                            <div class="char-count">0/2000</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">embedding模型</label>
+                            <select class="kb-select">
+                                <option>youtu-embedding</option>
+                                <option>openai-text-embedding-3</option>
+                                <option>bge-large-zh</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="kb-view-upload" style="display: none;">
+                        <div class="upload-area">
+                            <i class="ri-upload-cloud-2-line" style="font-size: 48px; color: #d9d9d9; margin-bottom: 10px;"></i>
+                            <p style="color: #333; font-weight: 500; margin-bottom: 5px;">点击或将文件拖拽到这里上传</p>
+                            <p style="font-size: 12px; color: #999;">支持 PDF, DOCX, TXT, MD 格式，单个文件不超过 20MB</p>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <div style="font-size: 13px; color: #666; margin-bottom: 10px;">已上传文件 (0)</div>
+                            <div style="background: #f9f9f9; height: 150px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 12px;">
+                                暂无文件
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="padding: 15px 20px; border-top: 1px solid #eee; text-align: right;">
+                <button onclick="closeKBModal()" style="padding: 8px 20px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; margin-right: 10px;">取消</button>
+                <button onclick="closeKBModal()" style="padding: 8px 20px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * AdpChatClient - 模拟 ADP 开源 Chat Client 的调用逻辑
+         * 封装了与腾讯云 ADP (Agent Development Platform) 兼容的通信协议
+         */
+        class AdpChatClient {
+            constructor(config) {
+                this.baseUrl = config.url; // ADP API Endpoint
+                this.token = config.key;   // ADP API Token
+                this.botId = config.botId; // ADP Bot ID (Optional Override)
+            }
+
+            /**
+             * 发送消息并获取回复 (模拟流式或普通请求)
+             * @param {Array} messages - 聊天上下文 history
+             * @param {string} model - 这里对应 ADP 的 Bot ID 或 Model ID
+             * @returns {Promise<string>} - 返回 AI 回复内容
+             */
+            async chat(messages, modelId) {
+                // 构建符合 ADP 规范的请求体
+                // 注意：ADP 通常使用 bot_id 来区分不同的智能体配置
+                const payload = {
+                    bot_id: modelId || this.botId, // 使用传入的 Bot ID (对应混元/DeepSeek)
+                    messages: messages,
+                    stream: false // 简化演示，使用非流式
+                };
+
+                try {
+                    const response = await fetch(this.baseUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${this.token}`,
+                            'X-Bot-Id': modelId || this.botId // 部分 ADP 版本需要 header
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || `ADP API Error: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    // 兼容 OpenAI 格式返回 (ADP 通常兼容)
+                    if (data.choices && data.choices.length > 0) {
+                        return data.choices[0].message.content;
+                    } else if (data.reply) {
+                        return data.reply; // 兼容旧版 ADP 格式
+                    }
+                    return "无有效回复";
+                } catch (error) {
+                    console.error("AdpChatClient Error:", error);
+                    throw error;
+                }
+            }
+        }
+
+        // ============================================
+        // 核心配置区：基于 ADP 的智能体配置
+        // ============================================
+        const CONFIG = {
+            // 场景 1: 使用 ADP 调用 DeepSeek (请填入对应的 Bot ID)
+            deepseek: {
+                url: "https://adp.cloud.tencent.com/api/v1/chat/completions", // ADP 标准接口
+                key: "sk-vgHRqys28ci4QvG3PsxtBCv3NWLxZ5dporHjynS69u5rZMrH", // 您的 ADP Token
+                botId: "bot-deepseek-v3-placeholder", // 【请修改】在 ADP 平台创建的连接 DeepSeek 的 Bot ID
+                label: "DeepSeek-V3",
+                supportText: "DeepSeek 医疗大模型 (via ADP)"
+            },
+            
+            // 场景 2: 使用 ADP 调用 混元 (请填入对应的 Bot ID)
+            hunyuan: {
+                url: "https://adp.cloud.tencent.com/api/v1/chat/completions",
+                key: "sk-vgHRqys28ci4QvG3PsxtBCv3NWLxZ5dporHjynS69u5rZMrH", // 您的 ADP Token
+                botId: "bot-hunyuan-pro-placeholder", // 【请修改】在 ADP 平台创建的连接 混元 的 Bot ID
+                label: "混元医疗大模型",
+                supportText: "腾讯混元大模型 (via ADP)"
+            }
+        };
+
+        // 初始化 ADP 客户端实例
+        // 注意：这里使用通用的 token 初始化，具体 botId 在调用时指定
+        const adpClient = new AdpChatClient({
+            url: "https://adp.cloud.tencent.com/api/v1/chat/completions",
+            key: "sk-vgHRqys28ci4QvG3PsxtBCv3NWLxZ5dporHjynS69u5rZMrH"
+        });
+
+        // 当前选中的模型配置 Key
+        let activeModelKey = 'hunyuan'; 
+
+        // 聊天上下文记忆
+        let chatContext = [
+            { role: "system", content: "你是一个专业的医疗智能助手，旨在辅助医生进行诊断、查询药物信息和解读医学文献。请提供专业、客观、有据可依的回答。" }
+        ];
+
+        let currentUser = null;
+
+        // ============================================
+        // 核心交互逻辑 (更新为使用 AdpChatClient)
+        // ============================================
+
+        // 切换模型函数
+        function switchModel(modelKey) {
+            activeModelKey = modelKey;
+            const config = CONFIG[modelKey];
+            
+            // 更新 UI 显示
+            document.getElementById('current-model-display').innerText = config.label;
+            
+            // 如果在聊天页，更新顶部状态
+            const techSupport = document.getElementById('agent-tech-support');
+            if(techSupport) techSupport.innerText = config.supportText;
+            
+            const agentNameMsg = document.getElementById('agent-name-msg');
+            if(agentNameMsg) agentNameMsg.innerText = config.label.replace('大模型', '助手');
+
+            closeAllDropdowns({target: document.body});
+            showToast(`已切换至 ${config.label}`);
+        }
+
+        // 首页开始聊天
+        function startChatFromHome() {
+            const mainInput = document.getElementById('main-input');
+            const query = mainInput.value.trim();
+            if(!query) return;
+
+            // 进入通用聊天页
+            enterAgent(CONFIG[activeModelKey].label);
+            
+            // 带入消息
+            mainInput.value = '';
+            
+            // 模拟发送
+            const chatInput = document.getElementById('chat-input');
+            chatInput.value = query;
+            sendMessage();
+        }
+        
+        // 通用发送消息 (支持双模型切换)
+        async function sendMessage(manualQuery = null) {
+            const input = document.getElementById('chat-input');
+            const message = manualQuery || input.value.trim();
+            
+            if (!message) return;
+
+            // 获取当前活跃的配置 (DeepSeek 或 Hunyuan 的 Bot ID)
+            const currentConfig = CONFIG[activeModelKey];
+
+            // UI 更新
+            appendMessage('chat-history', 'user', message);
+            input.value = ''; 
+            chatContext.push({ role: "user", content: message });
+            const loadingId = showLoading('chat-history');
+
+            try {
+                // 使用 AdpChatClient 发送请求
+                // 传入 chatContext 和 对应的 Bot ID
+                const replyText = await adpClient.chat(chatContext, currentConfig.botId);
+
+                removeLoading(loadingId);
+                appendMessage('chat-history', 'ai', replyText);
+                chatContext.push({ role: "assistant", content: replyText });
+
+            } catch (error) {
+                removeLoading(loadingId);
+                appendMessage('chat-history', 'ai', `ADP 连接错误: ${error.message}。请检查 Bot ID 配置。`);
+            }
+        }
+
+        // 智能问诊助手专属逻辑 (固定使用 DeepSeek 对应的 Bot)
+        async function sendConsultMessage() {
+            const input = document.getElementById('consult-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // UI 更新
+            appendMessage('consult-history', 'user', message);
+            input.value = '';
+            chatContext.push({ role: "user", content: message });
+            const loadingId = showLoading('consult-history');
+
+            try {
+                // 强制使用 DeepSeek 配置的 Bot ID
+                const config = CONFIG.deepseek; 
+                
+                // 使用 AdpChatClient 发送请求
+                const replyText = await adpClient.chat(chatContext, config.botId);
+
+                removeLoading(loadingId);
+                appendMessage('consult-history', 'ai', replyText);
+                chatContext.push({ role: "assistant", content: replyText });
+
+            } catch (error) {
+                removeLoading(loadingId);
+                appendMessage('consult-history', 'ai', "智能问诊服务连接超时，请稍后重试。");
+            }
+        }
+
+        // ============================================
+        // 辅助函数 (保持不变)
+        // ============================================
+        function appendMessage(containerId, role, text) {
+            const history = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            const icon = (role === 'ai') ? (containerId === 'consult-history' ? 'ri-hospital-line' : 'ri-robot-2-line') : 'ri-user-line';
+            div.innerHTML = `
+                ${role === 'ai' ? `<div class="ai-avatar"><i class="${icon}"></i></div>` : `<div class="user-avatar"><i class="${icon}"></i></div>`}
+                <div class="msg-content">${text.replace(/\n/g, '<br>')}</div>
+                ${role === 'user' ? `<div class="user-avatar"><i class="${icon}"></i></div>` : ''}
+            `;
+            history.appendChild(div);
+            history.scrollTop = history.scrollHeight;
+        }
+
+        function showLoading(containerId) {
+            const history = document.getElementById(containerId);
+            const id = 'loading-' + Date.now();
+            const div = document.createElement('div');
+            div.className = 'message ai';
+            div.id = id;
+            div.innerHTML = `<div class="ai-avatar"><i class="ri-more-fill"></i></div><div class="msg-content">...</div>`;
+            history.appendChild(div);
+            history.scrollTop = history.scrollHeight;
+            return id;
+        }
+
+        function removeLoading(id) { const el = document.getElementById(id); if (el) el.remove(); }
+        function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
+
+        // ============================================
+        // 页面逻辑 (保持不变)
+        // ============================================
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
+        function toggleSubmenu(el) { el.classList.toggle('expanded'); el.nextElementSibling.classList.toggle('open'); }
+        function openLoginModal() { document.getElementById('login-modal').style.display = 'flex'; }
+        function openSimpleModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeSimpleModal(id) { document.getElementById(id).style.display = 'none'; }
+        
+        function handleLogin() {
+            const username = document.getElementById('username-input').value.trim();
+            const password = document.getElementById('password-input').value.trim();
+            if ((username === 'doctor' || username === 'admin') && password === '123456') {
+                currentUser = { name: username === 'admin' ? '管理员' : '李医生', role: '心内科主治医师' };
+                updateUIForLogin();
+                closeSimpleModal('login-modal');
+                showToast(`欢迎回来，${currentUser.name}`);
+            } else {
+                alert('账号或密码错误！(提示：账号输入 doctor，密码 123456)');
+            }
+        }
+        function logout() {
+            currentUser = null;
+            document.getElementById('login-btn-sidebar').style.display = 'flex';
+            document.getElementById('user-profile-sidebar').style.display = 'none';
+            showToast('已退出登录');
+        }
+        function updateUIForLogin() {
+            if(currentUser) {
+                document.getElementById('login-btn-sidebar').style.display = 'none';
+                const profile = document.getElementById('user-profile-sidebar');
+                profile.style.display = 'flex';
+                profile.querySelector('.user-name').innerText = currentUser.name;
+            }
+        }
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+        function switchLoginTab(index) {
+            const tabs = document.querySelectorAll('.login-tab');
+            tabs.forEach((t, i) => { if(i === index) t.classList.add('active'); else t.classList.remove('active'); });
+            const methods = ['login-wechat', 'login-wecom', 'login-pwd', 'login-phone'];
+            methods.forEach((m, i) => { document.getElementById(m).style.display = (i === index) ? 'flex' : 'none'; });
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.main-content, .chat-interface').forEach(el => el.classList.add('page-hidden'));
+            const target = document.getElementById(pageId);
+            if(target) {
+                target.classList.remove('page-hidden');
+                if(pageId === 'agent-square-page') renderAgents();
+                if(pageId === 'course-center-page') renderCourses();
+                if(pageId === 'knowledge-base-page') renderKnowledgeBases();
+            }
+        }
+
+        function enterAgent(agentName) {
+            if (agentName === "智能问诊助手" || agentName === "智能诊断会话") {
+                enterConsultAgent();
+                return;
+            }
+            document.querySelectorAll('.main-content, .chat-interface').forEach(el => el.classList.add('page-hidden'));
+            const chatPage = document.getElementById('chat-page');
+            chatPage.classList.remove('page-hidden');
+            document.getElementById('agent-name').innerText = agentName;
+            
+            const currentConfig = CONFIG[activeModelKey];
+            document.getElementById('agent-tech-support').innerText = currentConfig.supportText;
+            document.getElementById('agent-name-msg').innerText = agentName.includes('大模型') ? agentName.replace('大模型', '助手') : agentName;
+        }
+
+        function enterConsultAgent() {
+            document.querySelectorAll('.main-content, .chat-interface').forEach(el => el.classList.add('page-hidden'));
+            document.getElementById('consultation-page').classList.remove('page-hidden');
+            chatContext = [{ role: "system", content: "你是一位经验丰富的全科医生。请通过询问患者主诉、病史来辅助诊断。" }];
+        }
+
+        function toggleDropdown(id) { document.getElementById(id).classList.toggle('show'); }
+        function closeAllDropdowns(e) { if(!e.target.closest('.tag-pill') && !e.target.closest('.source-btn') && !e.target.closest('.filter-chip')) document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show')); }
+        function insertTag(tag) { document.getElementById('main-input').value += tag; }
+        function toggleDeepThink(el) { el.classList.toggle('active'); }
+        function openKBModal() { document.getElementById('create-kb-modal').style.display = 'flex'; switchKBTab('base'); }
+        function closeKBModal() { document.getElementById('create-kb-modal').style.display = 'none'; }
+        function switchKBTab(tab) {
+            document.querySelectorAll('.kb-sidebar-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('kb-tab-' + tab).classList.add('active');
+            document.getElementById('kb-view-base').style.display = tab === 'base' ? 'block' : 'none';
+            document.getElementById('kb-view-upload').style.display = tab === 'upload' ? 'block' : 'none';
+        }
+
+        // Render Functions
+        const agentsData = [
+            { name: "智能问诊助手", desc: "【官方】专业PC版问诊界面，支持病情采集与初诊分析。", cat: "clinical", src: "official", icon: "ri-hospital-line", color: "#6f5af7", bg: "#ece9fe" },
+            { name: "辅助诊断专家", desc: "基于多模态大模型，辅助医生进行复杂病例分析。", cat: "clinical", src: "official", icon: "ri-stethoscope-line", color: "#00b578", bg: "#e6fffa" },
+            { name: "药物相互作用", desc: "快速查询处方药物之间的相互作用与配伍禁忌。", cat: "pharmacy", src: "official", icon: "ri-capsule-line", color: "#eb2f96", bg: "#fff0f6" },
+            { name: "ICD-10 编码", desc: "智能匹配疾病诊断与手术操作的国际标准编码。", cat: "plugin", src: "third", icon: "ri-code-box-line", color: "#5d5fef", bg: "#f0f5ff" }
+        ];
+        const coursesData = [
+            { title: "AI在医学影像中的应用", provider: "影像专家组", desc: "深度解析CNN在CT/MRI影像识别中的核心算法。", img: "https://placehold.co/400x250/00b578/FFFFFF?text=Medical+Imaging", cat: "imaging", color: "#00b578" },
+            { title: "利用AI加速新药研发", provider: "药物研究所", desc: "AlphaFold等模型在蛋白质结构预测与药物筛选中的应用。", img: "https://placehold.co/400x250/722ed1/FFFFFF?text=Drug+Discovery", cat: "research", color: "#722ed1" }
+        ];
+        const kbData = [{ name: "临床诊疗指南大全 2024", desc: "包含心血管、内分泌、呼吸科等科室的最新诊疗规范。", refs: ["辅助诊断专家"], time: "2024-05-12", creator: "张主任" }];
+
+        function renderAgents() {
+            const grid = document.getElementById('square-agent-grid');
+            if(!grid) return;
+            grid.innerHTML = '';
+            agentsData.forEach(agent => {
+                const div = document.createElement('div');
+                div.className = 'square-agent-card';
+                div.onclick = () => enterAgent(agent.name);
+                div.innerHTML = `<div class="agent-header-row"><div class="agent-avatar" style="background:${agent.bg}; color:${agent.color}; display:flex; align-items:center; justify-content:center; font-size:24px;"><i class="${agent.icon}"></i></div><div class="agent-title-col"><h3>${agent.name}</h3><span class="agent-tag">官方</span></div></div><div class="agent-desc">${agent.desc}</div>`;
+                grid.appendChild(div);
+            });
+        }
+        function filterAgents(cat, el) { renderAgents(); } // Simplified
+        function filterSource(src) { renderAgents(); } // Simplified
+        function renderCourses() {
+            const grid = document.getElementById('course-grid');
+            if(!grid) return;
+            grid.innerHTML = '';
+            coursesData.forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'course-card';
+                div.innerHTML = `<div class="course-thumb"><img src="${c.img}" style="background:${c.color}"></div><div class="course-info"><div class="course-title">${c.title}</div><div class="course-meta"><span>${c.provider}</span></div></div>`;
+                grid.appendChild(div);
+            });
+        }
+        function filterCourses(cat, el) { renderCourses(); }
+        function renderKnowledgeBases() {
+            const tbody = document.getElementById('kb-table-body');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            kbData.forEach(kb => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td><div class="kb-name-cell"><i class="ri-book-mark-line"></i> ${kb.name}</div></td><td style="color:#666;">${kb.desc}</td><td><span class="kb-ref-tag">${kb.refs[0]}</span></td><td style="color:#999;">${kb.time}</td><td>${kb.creator}</td><td><span class="kb-action-btn"><i class="ri-edit-line"></i></span></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+        window.onclick = function(e) { if(!e.target.matches('.tag-pill, .tag-pill *, .source-btn, .source-btn *')) { document.querySelectorAll('.dropdown-menu').forEach(m=>m.classList.remove('show')); }}
+    </script>
+</body>
+</html>
